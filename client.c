@@ -1,6 +1,6 @@
-/*******************************
-client.c: the source file of the client in udp transmission for a large packet
-********************************/
+/***********************************
+client.c: the source file of the client in UDP transmission
+***********************************/
 
 #include "headsock.h"
 

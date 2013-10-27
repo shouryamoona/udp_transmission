@@ -1,5 +1,5 @@
 /**********************************
-server.c: the source file of the server in udp transmission 
+server.c: the source file of the server in UDP transmission 
 ***********************************/
 #include "headsock.h"
                                                       
@@ -75,7 +75,7 @@ void str_ser(int sockfd)
 			exit(1);
 	}                                                 
 
-	if ((fp = fopen ("myTCPreceive.txt","wt")) == NULL)
+	if ((fp = fopen ("myUDPreceive.txt","wt")) == NULL)
 	{
 		printf("File doesn't exit\n");
 		exit(0);
