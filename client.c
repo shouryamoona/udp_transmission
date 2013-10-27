@@ -108,25 +108,26 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 			slen = lsize+1-ci;
 		else 
 			slen = DATALEN;
+			
 		memcpy(sends, (buf+ci), slen);
-		n = sendto(sockfd, &sends, slen, 0, ser_addr, sizeof (struct sockaddr_in));			//send the data
-		if(n == -1) 
+		
+		if( (n = sendto(sockfd, &sends, slen, 0, ser_addr, sizeof (struct sockaddr_in))) == -1) 
 		{
 			printf("send error!");								
 			exit(1);
 		}
 		ci += slen;
+		
+		if ((n= recvfrom(sockfd, &acks, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		//receive ACK or NACK
+		{	        
+			printf("error receiving data\n");
+			exit(1);
+		}
+	
+		if ((acks.num != 1) && (acks.len != 0))         				
+			printf("error in transmission\n");
 	}
-	
-	if ((n= recvfrom(sockfd, &acks, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		//receive ACK or NACK
-	{	        
-		printf("error receiving data\n");
-		exit(1);
-	}
-	
-	if ((acks.num != 1) && (acks.len != 0))         				
-		printf("error in transmission\n");
-	
+		
 	gettimeofday(&recvt, NULL);
 	*len= ci;                                                         
 	tv_sub(&recvt, &sendt);				// get the whole trans time

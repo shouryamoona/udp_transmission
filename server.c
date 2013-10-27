@@ -50,30 +50,34 @@ void str_ser(int sockfd)
 	end = 0;
 	printf("receiving data!\n");
 	
+	int c = 0;
 	while(!end)
 	{
+		printf(" c = %d\n",c);
 		if ((n= recvfrom(sockfd, &recvs, DATALEN, 0, (struct sockaddr *)&client_addr, &addrlen))==-1)		//receive the packet
 		{
 			printf("error when receiving\n");
 			exit(1);
 		}
+		
 		if (recvs[n-1] == '\0')			//if it is the end of the file
 		{
 			end = 1;
 			n --;
 		}
+		c++;	
 		memcpy((buf+lseek), recvs, n);
 		lseek += n;
-	}
+		
+		ack.num = ACK_CODE;
+		ack.len = 0;
 	
-	ack.num = 1;
-	ack.len = 0;
-	
-	if ((n = sendto(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, addrlen))==-1)			//send the ack
-	{
+		if ((n = sendto(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, addrlen))==-1)			//send the ack
+		{
 			printf("send error!");								
 			exit(1);
-	}                                                 
+		} 
+	}                               
 
 	if ((fp = fopen ("myUDPreceive.txt","wt")) == NULL)
 	{
