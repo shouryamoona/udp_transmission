@@ -16,6 +16,7 @@
 #define MYTCP_PORT 4950
 #define MYUDP_PORT 5350
 #define MAXSIZE 30008
+#define DATALEN 500
 #define MAXLEN 30000
 #define MAXINT 0x7fffffff
 #define BUFSIZE 31000

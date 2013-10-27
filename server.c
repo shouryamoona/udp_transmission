@@ -5,8 +5,6 @@ server.c: the source file of the server in udp transmission for a large packet
 
 #include "headsock.h"
 
-#define BACKLOG 10
-
 //void str_ser(int sockfd, struct sockaddr *addr, int addrlen);                                                        // transmitting and receiving function
 void str_ser(int sockfd);
 
@@ -33,10 +31,9 @@ int main(void)
 		exit(1);
 	}
 	
-	
-	printf("receiving start\n");
 	while (1)
 	{
+		printf("waiting for data\n");
 		str_ser(sockfd);
 		//str_ser(sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr_in));                                          //receive packet and response
 	}
@@ -49,49 +46,52 @@ void str_ser(int sockfd)
 {
 	char buf[BUFSIZE];
 	FILE *fp;
-	struct pack_so recvs;
+	char recvs[DATALEN];
 	struct ack_so ack;
-	int end, n = 0, ci, lsize=1;
+	int end, n = 0;
+	long lseek=0;
+	end = 0;
 	
-	ci = end = ack.num = 0;
+	printf("receiving data!\n");
 	
+	struct sockaddr_in their_addr;
+	int sin_size = sizeof (struct sockaddr_in);
 	
-	struct sockaddr_in addr;
-
-	int addrlen = sizeof (struct sockaddr_in);
-
-	while(ci < lsize)
+	while(!end)
 	{
-		if ((n= recvfrom(sockfd, &recvs, MAXSIZE, 0, (struct sockaddr *)&addr, &addrlen))==-1)                                   //receive the packet
+		if ((n= recvfrom(sockfd, &recvs, DATALEN, 0, (struct sockaddr *)&their_addr, &sin_size))==-1)                                   //receive the packet
 		{
-			printf("receiving error!\n");
-			return;
+			printf("error when receiving\n");
+			exit(1);
 		}
-		else printf("%d data received\n", n);
-		if (ci == 0) {
-			lsize = recvs.len;								//copy the data length
-			memcpy(buf, recvs.data, (n-HEADLEN));			//copy the data
-			ci += n-HEADLEN;
+		if (recvs[n-1] == '\0')									//if it is the end of the file
+		{
+			end = 1;
+			n --;
 		}
-		else {
-			memcpy((buf+ci), &recvs, n);
-			ci += n;
-		}
+		memcpy((buf+lseek), recvs, n);
+		lseek += n;
 	}
-	ack.len = 0;
+	
 	ack.num = 1;
-//	memcpy(buf, recvs.data, recvs.len);
-	sendto(sockfd, &ack, 2, 0,(struct sockaddr*) &addr, sizeof addr);
-//	send(sockfd, &ack, 2, 0);                                                  //send ACK or NACK
+	ack.len = 0;
+	
+	
+	// (n = sendto(sockfd, &ack, 2, 0, (struct sockaddr *)&their_addr, sin_size))==-1
+	
+	if ((n = sendto(sockfd, &ack, 2, 0, (struct sockaddr *)&their_addr, sin_size))==-1)
+	{
+			printf("send error!");								//send the ack
+			exit(1);
+	}                                                 
 
-	if((fp = fopen ("myTCPreceive.txt","wt")) == NULL)
+	if ((fp = fopen ("myTCPreceive.txt","wt")) == NULL)
 	{
 		printf("File doesn't exit\n");
 		exit(0);
 	}
-	printf("the data received: %d\n", ci);
-	printf("the file size received: %d\n", lsize);
-	fwrite (buf , 1 , lsize, fp);								//write the data into file
+	
+	fwrite (buf , 1 , lseek , fp);								//write the data into file
 	fclose(fp);
-	printf("a file has been successfully received!\n");
+	printf("a file has been successfully received!\nthe total data received is %d bytes\n", (int)lseek);
 }
