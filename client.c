@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 	ti = str_cli(fp, sockfd, (struct sockaddr *)&ser_addr, &len);			//perform the transmission and receiving
 	
 	if (ti != -1)	{
-		rt = (len/(float)ti);			//caculate the average transmission rate
+		rt = (len/(float)ti);			//calculate the average transmission rate
 		printf("Ave Time(ms) : %.3f, Ave Data sent(byte): %d\nAve Data rate: %f (Kbytes/s)\n", ti, (int)len, rt);
 	}
 
@@ -78,7 +78,7 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 	char *buf;
 	long lsize,ci;
 	char sends[DATALEN];
-	struct ack_so acks;
+	struct ack_so ack;
 	int n, slen;
 	float time_inv = 0.0;
 	struct timeval sendt, recvt;
@@ -118,13 +118,15 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 		}
 		ci += slen;
 		
-		if ((n= recvfrom(sockfd, &acks, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		//receive ACK or NACK
+		if ((n= recvfrom(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		//receive ACK or NACK
 		{	        
 			printf("error receiving data\n");
 			exit(1);
 		}
+		
+		printf("ack.num = %d\n",ack.num );
 	
-		if ((acks.num != 1) && (acks.len != 0))         				
+		if (( ack.num == NACK_CODE ) && (ack.len == 0))         	// if received NACK			
 			printf("error in transmission\n");
 	}
 		

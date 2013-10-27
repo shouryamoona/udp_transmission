@@ -48,12 +48,13 @@ void str_ser(int sockfd)
 	
 	addrlen = sizeof (struct sockaddr_in);
 	end = 0;
-	printf("receiving data!\n");
-	
 	int c = 0;
+	printf("receiving data!\n");
+	srand ( time(NULL) );
+	
 	while(!end)
 	{
-		printf(" c = %d\n",c);
+		printf("c = %d\n",c);
 		if ((n= recvfrom(sockfd, &recvs, DATALEN, 0, (struct sockaddr *)&client_addr, &addrlen))==-1)		//receive the packet
 		{
 			printf("error when receiving\n");
@@ -69,10 +70,20 @@ void str_ser(int sockfd)
 		memcpy((buf+lseek), recvs, n);
 		lseek += n;
 		
-		ack.num = ACK_CODE;
+		double prob = (double)rand()/RAND_MAX;
+		prob = floor(prob * 10.0) / 10.0;
+		printf("prob = %f, ",prob);
+		
+		if ( prob <= ERROR_PROBABILITY )
+			ack.num = NACK_CODE;
+		else
+			ack.num = ACK_CODE;
+			
+		printf("ack.num = %d\n",ack.num);
+		
 		ack.len = 0;
 	
-		if ((n = sendto(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, addrlen))==-1)			//send the ack
+		if ((n = sendto(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, addrlen)) == -1 )			//send the ack or nack
 		{
 			printf("send error!");								
 			exit(1);
