@@ -15,7 +15,7 @@ int main(void)
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)		
 	{
 		printf("error in socket!");
-		exit(1);
+		exit(0);
 	}
 	
 	ser_addr.sin_family = AF_INET;
@@ -27,7 +27,7 @@ int main(void)
 	if (bind(sockfd, (struct sockaddr *) &ser_addr, sizeof(struct sockaddr)) == -1)		
 	{
 		printf("Error in binding.\n");
-		exit(1);
+		exit(0);
 	}
 	
 	printf("Start receiving data.\n");
@@ -35,7 +35,7 @@ int main(void)
 	// Receive packet and response  
 	receive_data(sockfd);		                             
 	close(sockfd);
-	exit(0);
+	exit(1);
 }
 
 void receive_data(int sockfd)
@@ -60,7 +60,7 @@ void receive_data(int sockfd)
 		if (n == -1)		
 		{
 			printf("Error when receiving.\n");
-			exit(1);
+			exit(0);
 		}
 		
 		// If received a packet with error
@@ -89,13 +89,13 @@ void receive_data(int sockfd)
 		if ((n = sendto(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, addrlen)) == -1)			
 		{
 			printf("Error when sending ACK/NACK.\n");								
-			exit(1);
+			exit(0);
 		} 
 	}                               
 
 	if ((file_pointer = fopen ("output_file.txt","wt")) == NULL)
 	{
-		printf("File doesn't exit\n");
+		printf("File doesn't exit.\n");
 		exit(0);
 	}
 		

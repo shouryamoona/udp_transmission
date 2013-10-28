@@ -37,8 +37,8 @@ int main(int argc, char **argv)
 	// Create the socket
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)		  
 	{
-		printf("error in socket");
-		exit(1);
+		printf("Error when creating socket.\n");
+		exit(0);
 	}
 	
 	addrs = (struct in_addr **)sh->h_addr_list;
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 	printf("canonical name: %s\n", sh->h_name);			
 	
 	for (pptr = sh->h_aliases; *pptr != NULL; pptr++)
-		printf("the aliases name is: %s\n", *pptr);
+		printf("The aliases name is: %s\n", *pptr);
 	
 	switch(sh->h_addrtype)
 	{
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 
 	close(sockfd);
 	fclose(file_pointer);
-	exit(0);
+	exit(1);
 }
 
 float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, long *data_sent)
@@ -104,12 +104,12 @@ float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, l
 	rewind (file_pointer);
 	
 	printf("The file length is %d bytes.\n", (int)file_size);
-	printf("the packet length is %d bytes.\n",DATALEN);
+	printf("The packet length is %d bytes.\n",DATALEN);
 	
 	// Allocate memory to contain the whole file
 	buffer = (char *) malloc (file_size);			 
 	if (buffer == NULL) 
-		exit (2);
+		exit (0);
 	
 	// Copy the file into the buffer
 	fread (buffer,1,file_size,file_pointer);			  					
@@ -141,7 +141,7 @@ float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, l
 			if (n == -1) 
 			{
 				printf("Error sending data packet.\n");								
-				exit(1);
+				exit(0);
 			}
 		}
 		else			
@@ -151,7 +151,7 @@ float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, l
 			if (n == -1) 
 			{
 				printf("Error sending data packet.\n");								
-				exit(1);
+				exit(0);
 			}
 		}
 		
@@ -159,7 +159,7 @@ float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, l
 		if ((n = recvfrom(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		
 		{	        
 			printf("Error receiving ACK or NACK.\n");
-			exit(1);
+			exit(0);
 		}
 	
 		// If received NACK, continue and retransmit last packet.
