@@ -116,7 +116,7 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 		
 		double prob = 0.0;
 		prob = (double)rand()/(double)RAND_MAX;
-		if (prob > ERROR_PROBABILITY)
+		if (prob > ERROR_PROBABILITY)			// Send a packet without error
 		{
 			if( (n = sendto(sockfd, &sends, slen, 0, ser_addr, sizeof (struct sockaddr_in))) == -1) 
 			{
@@ -124,9 +124,8 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 				exit(1);
 			}
 		}
-		else
+		else			// send a packet with error
 		{
-			//printf("Sending bad packet\n");
 			if( (n = sendto(sockfd, &sends, BAD_PACKET_LENGTH, 0, ser_addr, sizeof (struct sockaddr_in))) == -1) 
 			{
 				printf("Error sending data packet!");								
@@ -140,7 +139,7 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 			exit(1);
 		}
 	
-		if (( ack.num == NACK_CODE ) || (ack.len == 1))         	// if received NACK	
+		if (( ack.num == NACK_CODE ) || (ack.len != 0))         	// if received NACK	
 		{
 			printf("Error in transmission.\n");
 			continue;

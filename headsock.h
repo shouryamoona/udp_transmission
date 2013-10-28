@@ -15,15 +15,11 @@
 #define NEWFILE (O_WRONLY|O_CREAT|O_TRUNC)
 #define MYTCP_PORT 4950
 #define MYUDP_PORT 5350
-#define MAXSIZE 30008
 #define DATALEN 500
-#define MAXLEN 30000
-#define MAXINT 0x7fffffff
-#define BUFSIZE 31000
-#define N 1
+#define BUFSIZE 60000
 #define ACK_CODE 1
 #define NACK_CODE 0
-#define ERROR_PROBABILITY 0.2
+#define ERROR_PROBABILITY 0.20
 #define BAD_PACKET_LENGTH 0
 #define HEADLEN 8
 
@@ -31,7 +27,7 @@ struct pack_so			//data packet structure
 {
 uint32_t num;				// the sequence number
 uint32_t len;				// the packet length
-char data[MAXLEN];	//the packet data
+char data[DATALEN];		//the packet data
 };
 
 struct ack_so
