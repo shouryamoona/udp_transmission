@@ -4,8 +4,11 @@ client.c: the source file of the client in UDP transmission
 
 #include "headsock.h"
 
-float str_cli(FILE *fp, int sockfd,struct sockaddr *ser_addr, long *len);			//packet transmission fuction
-void tv_sub(struct  timeval *out, struct timeval *in);			//calculate the time interval between out and in
+// Packet transmission function
+float str_cli(FILE *fp, int sockfd,struct sockaddr *ser_addr, long *len);			
+
+// Calculate the time interval between out and in
+void tv_sub(struct  timeval *out, struct timeval *in);			
 
 int main(int argc, char **argv)
 {
@@ -18,24 +21,26 @@ int main(int argc, char **argv)
 	struct in_addr **addrs;
 	FILE *fp;
 
-	if (argc != 2) {
-		printf("parameters not match");
-	}
+	if (argc != 2) 
+		printf("Parameters do not match.\n");
 
-	if ((sh=gethostbyname(argv[1]))==NULL)			//get host's information
+	// Get host's information
+	if ((sh=gethostbyname(argv[1])) == NULL)			
 	{             				
-		printf("error when gethostbyname");
+		printf("Error when calling gethostbyname.\n");
 		exit(0);
 	}
 
-	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1 )		  //create the socket
+	// Create the socket
+	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1 )		  
 	{
 		printf("error in socket");
 		exit(1);
 	}
 	
 	addrs = (struct in_addr **)sh->h_addr_list;
-	printf("canonical name: %s\n", sh->h_name);			//print server's information
+	// Print server's information
+	printf("canonical name: %s\n", sh->h_name);			
 	
 	for (pptr=sh->h_aliases; *pptr != NULL; pptr++)
 		printf("the aliases name is: %s\n", *pptr);
@@ -46,7 +51,7 @@ int main(int argc, char **argv)
 			printf("AF_INET\n");
 		break;
 		default:
-			printf("unknown addrtype\n");
+			printf("Unknown address type.\n");
 		break;
 	}
 	
@@ -55,17 +60,21 @@ int main(int argc, char **argv)
 	memcpy(&(ser_addr.sin_addr.s_addr), *addrs, sizeof(struct in_addr));
 	bzero(&(ser_addr.sin_zero), 8);
 
-	if((fp = fopen ("myfile.txt","r+t")) == NULL)		  //open local file to read the data
+	// Open local file to read the data
+	if((fp = fopen ("myfile.txt","r+t")) == NULL)		  
 	{
-		printf("File doesn't exit\n");
+		printf("File doesn't exit.\n");
 		exit(0);
 	}
-
-	ti = str_cli(fp, sockfd, (struct sockaddr *)&ser_addr, &len);			//perform the transmission and receiving
 	
-	if (ti != -1)	{
-		rt = (len/(float)ti);			//calculate the average transmission rate
-		printf("Ave Time(ms) : %.3f, Ave Data sent(byte): %d\nAve Data rate: %f (Kbytes/s)\n", ti, (int)len, rt);
+	// Perform the transmission and receiving
+	ti = str_cli(fp, sockfd, (struct sockaddr *)&ser_addr, &len);			
+	
+	if (ti != -1)
+	{
+		// Calculate the average transmission rate
+		rt = (len/(float)ti);			
+		printf("Ave Time(ms) : %.3f, Ave Data sent(byte): %d\nAve Data rate: %f (Kbytes/s).\n", ti, (int)len, rt);
 	}
 
 	close(sockfd);
@@ -81,6 +90,7 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 	struct ack_so ack;
 	int n, slen;
 	float time_inv = 0.0;
+	double random_probability = 0.0;
 	struct timeval sendt, recvt;
 	struct sockaddr_in client_addr;
 	int addrlen = sizeof (struct sockaddr_in);
@@ -89,21 +99,24 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 	fseek (fp , 0 , SEEK_END);
 	lsize = ftell (fp);
 	rewind (fp);
-	printf("The file length is %d bytes\n", (int)lsize);
-	printf("the packet length is %d bytes\n",DATALEN);
+	printf("The file length is %d bytes.\n", (int)lsize);
+	printf("the packet length is %d bytes.\n",DATALEN);
 	
-	buf = (char *) malloc (lsize);			 // allocate memory to contain the whole file
+	// Allocate memory to contain the whole file
+	buf = (char *) malloc (lsize);			 
 	if (buf == NULL) 
 		exit (2);
 	
-	fread (buf,1,lsize,fp);			  // copy the file into the buffer					
+	// Copy the file into the buffer
+	fread (buf,1,lsize,fp);			  					
 	
-	buf[lsize] ='\0';					//append the end byte
-	gettimeofday(&sendt, NULL);			
+	// Append the null character at the end of the buffer
+	buf[lsize] ='\0';					
+	gettimeofday(&sendt,NULL);			
 	int c = 0;
-	srand ( time(NULL) );
+	srand (time(NULL));
 	
-	while(ci<= lsize)
+	while (ci <= lsize)
 	{
 		printf("c = %d\n",c);
 		c++;
@@ -114,37 +127,41 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 			
 		memcpy(sends, (buf+ci), slen);
 		
-		double prob = 0.0;
-		prob = (double)rand()/(double)RAND_MAX;
-		if (prob > ERROR_PROBABILITY)			// Send a packet without error
+		random_probability = (double)rand() / (double)RAND_MAX;
+		if (random_probability > ERROR_PROBABILITY)			
 		{
-			if( (n = sendto(sockfd, &sends, slen, 0, ser_addr, sizeof (struct sockaddr_in))) == -1) 
+			// Send a packet without error
+			n = sendto(sockfd, &sends, slen, 0, ser_addr, sizeof (struct sockaddr_in));
+			if (n == -1) 
 			{
-				printf("Error sending data packet!");								
+				printf("Error sending data packet.\n");								
 				exit(1);
 			}
 		}
-		else			// send a packet with error
+		else			
 		{
-			if( (n = sendto(sockfd, &sends, BAD_PACKET_LENGTH, 0, ser_addr, sizeof (struct sockaddr_in))) == -1) 
+			// Send a packet with error
+			n = sendto(sockfd, &sends, BAD_PACKET_LENGTH, 0, ser_addr, sizeof (struct sockaddr_in));
+			if (n == -1) 
 			{
-				printf("Error sending data packet!");								
+				printf("Error sending data packet.\n");								
 				exit(1);
 			}
 		}
 		
-		if ((n= recvfrom(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		//receive ACK or NACK
+		// Receive ACK or NACK
+		if ((n= recvfrom(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		
 		{	        
 			printf("Error receiving ACK or NACK.\n");
 			exit(1);
 		}
 	
-		if (( ack.num == NACK_CODE ) || (ack.len != 0))         	// if received NACK	
+		// If received NACK, continue and retransmit last packet.
+		if ((ack.num == NACK_CODE) || (ack.len != 0))         		
 		{
-			printf("Error in transmission.\n");
+			printf("Error in transmission. Retransmitting packet.\n");
 			continue;
 		}	
-		
 		ci += slen;
 	}
 		
