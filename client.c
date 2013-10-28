@@ -5,24 +5,27 @@ client.c: the source file of the client in UDP transmission
 #include "headsock.h"
 
 // Packet transmission function
-float str_cli(FILE *fp, int sockfd,struct sockaddr *ser_addr, long *len);			
+float transmit_data(FILE *file_pointer, int sockfd,struct sockaddr *ser_addr, long *data_sent);			
 
 // Calculate the time interval between out and in
-void tv_sub(struct  timeval *out, struct timeval *in);			
+void calculate_time_elapsed(struct timeval *out, struct timeval *in);			
 
 int main(int argc, char **argv)
 {
 	int sockfd;
-	float ti, rt;
-	long len;
+	float time_elapsed, transmission_rate;
+	long data_sent;
 	struct sockaddr_in ser_addr;
 	char ** pptr;
 	struct hostent *sh;
 	struct in_addr **addrs;
-	FILE *fp;
+	FILE *file_pointer;
 
 	if (argc != 2) 
+	{
 		printf("Parameters do not match.\n");
+		exit(0);
+	}
 
 	// Get host's information
 	if ((sh=gethostbyname(argv[1])) == NULL)			
@@ -32,7 +35,7 @@ int main(int argc, char **argv)
 	}
 
 	// Create the socket
-	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1 )		  
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)		  
 	{
 		printf("error in socket");
 		exit(1);
@@ -42,96 +45,99 @@ int main(int argc, char **argv)
 	// Print server's information
 	printf("canonical name: %s\n", sh->h_name);			
 	
-	for (pptr=sh->h_aliases; *pptr != NULL; pptr++)
+	for (pptr = sh->h_aliases; *pptr != NULL; pptr++)
 		printf("the aliases name is: %s\n", *pptr);
 	
 	switch(sh->h_addrtype)
 	{
 		case AF_INET:
 			printf("AF_INET\n");
-		break;
+			break;
 		default:
 			printf("Unknown address type.\n");
-		break;
+			break;
 	}
 	
 	ser_addr.sin_family = AF_INET;                                                      
 	ser_addr.sin_port = htons(MYUDP_PORT);
 	memcpy(&(ser_addr.sin_addr.s_addr), *addrs, sizeof(struct in_addr));
-	bzero(&(ser_addr.sin_zero), 8);
+	bzero(&(ser_addr.sin_zero),8);
 
 	// Open local file to read the data
-	if((fp = fopen ("myfile.txt","r+t")) == NULL)		  
+	if((file_pointer = fopen("myfile.txt","r+t")) == NULL)		  
 	{
-		printf("File doesn't exit.\n");
+		printf("File does not exit.\n");
 		exit(0);
 	}
 	
 	// Perform the transmission and receiving
-	ti = str_cli(fp, sockfd, (struct sockaddr *)&ser_addr, &len);			
+	time_elapsed = transmit_data(file_pointer, sockfd, (struct sockaddr *)&ser_addr, &data_sent);			
 	
-	if (ti != -1)
+	if (time_elapsed != -1)
 	{
 		// Calculate the average transmission rate
-		rt = (len/(float)ti);			
-		printf("Ave Time(ms) : %.3f, Ave Data sent(byte): %d\nAve Data rate: %f (Kbytes/s).\n", ti, (int)len, rt);
+		transmission_rate = (data_sent/(float)time_elapsed);			
+		printf("Ave Time(ms) : %.3f, Ave Data sent(byte): %d\nAve Data rate: %f (Kbytes/s).\n", time_elapsed, (int)data_sent, transmission_rate);
 	}
 
 	close(sockfd);
-	fclose(fp);
+	fclose(file_pointer);
 	exit(0);
 }
 
-float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
+float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, long *data_sent)
 {
-	char *buf;
-	long lsize,ci;
-	char sends[DATALEN];
+	char *buffer, send_data[DATALEN];
+	long file_size,total_bytes_sent;
 	struct ack_so ack;
-	int n, slen;
-	float time_inv = 0.0;
+	int n, packet_length, addrlen;
+	float time_elapsed = 0.0;
 	double random_probability = 0.0;
-	struct timeval sendt, recvt;
+	struct timeval send_time, receive_time;
 	struct sockaddr_in client_addr;
-	int addrlen = sizeof (struct sockaddr_in);
 	
-	ci = 0;
-	fseek (fp , 0 , SEEK_END);
-	lsize = ftell (fp);
-	rewind (fp);
-	printf("The file length is %d bytes.\n", (int)lsize);
+	addrlen = sizeof (struct sockaddr_in);
+	total_bytes_sent = 0;
+	
+	fseek (file_pointer ,0 , SEEK_END);
+	file_size = ftell (file_pointer);
+	rewind (file_pointer);
+	
+	printf("The file length is %d bytes.\n", (int)file_size);
 	printf("the packet length is %d bytes.\n",DATALEN);
 	
 	// Allocate memory to contain the whole file
-	buf = (char *) malloc (lsize);			 
-	if (buf == NULL) 
+	buffer = (char *) malloc (file_size);			 
+	if (buffer == NULL) 
 		exit (2);
 	
 	// Copy the file into the buffer
-	fread (buf,1,lsize,fp);			  					
+	fread (buffer,1,file_size,file_pointer);			  					
 	
 	// Append the null character at the end of the buffer
-	buf[lsize] ='\0';					
-	gettimeofday(&sendt,NULL);			
-	int c = 0;
-	srand (time(NULL));
+	buffer[file_size] ='\0';		
 	
-	while (ci <= lsize)
+	gettimeofday(&send_time,NULL);			
+	int c = 0;
+	srand(time(NULL));
+	
+	while (total_bytes_sent <= file_size)
 	{
 		printf("c = %d\n",c);
 		c++;
-		if ((lsize+1-ci) <= DATALEN)
-			slen = lsize+1-ci;
+		if ((file_size + 1 - total_bytes_sent) <= DATALEN)
+			packet_length = file_size + 1 - total_bytes_sent;
 		else 
-			slen = DATALEN;
+			packet_length = DATALEN;
 			
-		memcpy(sends, (buf+ci), slen);
+		memcpy(send_data,(buffer + total_bytes_sent), packet_length);
 		
-		random_probability = (double)rand() / (double)RAND_MAX;
+		// Calculate random probability value to send a packet with or without error
+		random_probability = (double)rand()/(double)RAND_MAX;
 		if (random_probability > ERROR_PROBABILITY)			
 		{
 			// Send a packet without error
-			n = sendto(sockfd, &sends, slen, 0, ser_addr, sizeof (struct sockaddr_in));
+			n = sendto(sockfd, &send_data, packet_length, 0, ser_addr, sizeof (struct sockaddr_in));
 			if (n == -1) 
 			{
 				printf("Error sending data packet.\n");								
@@ -141,7 +147,7 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 		else			
 		{
 			// Send a packet with error
-			n = sendto(sockfd, &sends, BAD_PACKET_LENGTH, 0, ser_addr, sizeof (struct sockaddr_in));
+			n = sendto(sockfd, &send_data, BAD_PACKET_LENGTH, 0, ser_addr, sizeof (struct sockaddr_in));
 			if (n == -1) 
 			{
 				printf("Error sending data packet.\n");								
@@ -149,8 +155,8 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 			}
 		}
 		
-		// Receive ACK or NACK
-		if ((n= recvfrom(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		
+		// Receive ACK or NACK from client
+		if ((n = recvfrom(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		
 		{	        
 			printf("Error receiving ACK or NACK.\n");
 			exit(1);
@@ -162,19 +168,20 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 			printf("Error in transmission. Retransmitting packet.\n");
 			continue;
 		}	
-		ci += slen;
+		total_bytes_sent += packet_length;
 	}
 		
-	gettimeofday(&recvt, NULL);
-	*len= ci;                                                         
-	tv_sub(&recvt, &sendt);				// get the whole trans time
-	time_inv += (recvt.tv_sec)*1000.0 + (recvt.tv_usec)/1000.0;
-	return(time_inv);	
+	gettimeofday(&receive_time, NULL);
+	*data_sent = total_bytes_sent;                                                         
+	calculate_time_elapsed(&receive_time, &send_time);				
+	// Get the whole transmission time
+	time_elapsed += (receive_time.tv_sec)*1000.0 + (receive_time.tv_usec)/1000.0;
+	return(time_elapsed);	
 }
 
-void tv_sub(struct  timeval *out, struct timeval *in)
+void calculate_time_elapsed(struct  timeval *out, struct timeval *in)
 {
-	if ((out->tv_usec -= in->tv_usec) <0)
+	if ((out->tv_usec -= in->tv_usec) < 0)
 	{
 		--out ->tv_sec;
 		out ->tv_usec += 1000000;

@@ -23,11 +23,11 @@
 #define BAD_PACKET_LENGTH 0
 #define HEADLEN 8
 
-struct pack_so			//data packet structure
+struct pack_so			
 {
-uint32_t num;				// the sequence number
-uint32_t len;				// the packet length
-char data[DATALEN];		//the packet data
+uint32_t num;			
+uint32_t len;			
+char data[DATALEN];		
 };
 
 struct ack_so
