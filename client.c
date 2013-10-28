@@ -86,7 +86,6 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 	int addrlen = sizeof (struct sockaddr_in);
 	
 	ci = 0;
-
 	fseek (fp , 0 , SEEK_END);
 	lsize = ftell (fp);
 	rewind (fp);
@@ -101,9 +100,13 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 	
 	buf[lsize] ='\0';					//append the end byte
 	gettimeofday(&sendt, NULL);			
+	int c = 0;
+	srand ( time(NULL) );
 	
 	while(ci<= lsize)
 	{
+		printf("c = %d\n",c);
+		c++;
 		if ((lsize+1-ci) <= DATALEN)
 			slen = lsize+1-ci;
 		else 
@@ -111,23 +114,39 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *ser_addr, long *len)
 			
 		memcpy(sends, (buf+ci), slen);
 		
-		if( (n = sendto(sockfd, &sends, slen, 0, ser_addr, sizeof (struct sockaddr_in))) == -1) 
+		double prob = 0.0;
+		prob = (double)rand()/(double)RAND_MAX;
+		if (prob > ERROR_PROBABILITY)
 		{
-			printf("send error!");								
-			exit(1);
+			if( (n = sendto(sockfd, &sends, slen, 0, ser_addr, sizeof (struct sockaddr_in))) == -1) 
+			{
+				printf("Error sending data packet!");								
+				exit(1);
+			}
 		}
-		ci += slen;
+		else
+		{
+			//printf("Sending bad packet\n");
+			if( (n = sendto(sockfd, &sends, BAD_PACKET_LENGTH, 0, ser_addr, sizeof (struct sockaddr_in))) == -1) 
+			{
+				printf("Error sending data packet!");								
+				exit(1);
+			}
+		}
 		
 		if ((n= recvfrom(sockfd, &ack, 2, 0, (struct sockaddr *)&client_addr, &addrlen)) == -1) 		//receive ACK or NACK
 		{	        
-			printf("error receiving data\n");
+			printf("Error receiving ACK or NACK.\n");
 			exit(1);
 		}
-		
-		printf("ack.num = %d\n",ack.num );
 	
-		if (( ack.num == NACK_CODE ) && (ack.len == 0))         	// if received NACK			
-			printf("error in transmission\n");
+		if (( ack.num == NACK_CODE ) || (ack.len == 1))         	// if received NACK	
+		{
+			printf("Error in transmission.\n");
+			continue;
+		}	
+		
+		ci += slen;
 	}
 		
 	gettimeofday(&recvt, NULL);

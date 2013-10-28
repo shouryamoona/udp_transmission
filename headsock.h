@@ -24,6 +24,7 @@
 #define ACK_CODE 1
 #define NACK_CODE 0
 #define ERROR_PROBABILITY 0.2
+#define BAD_PACKET_LENGTH 0
 #define HEADLEN 8
 
 struct pack_so			//data packet structure

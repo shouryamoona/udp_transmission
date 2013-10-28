@@ -27,11 +27,8 @@ int main(void)
 		exit(1);
 	}
 	
-	while (1)
-	{
-		printf("waiting for data\n");
-		str_ser(sockfd);		//receive packet and response                               
-	}
+	printf("waiting for data\n");
+	str_ser(sockfd);		//receive packet and response                               
 	close(sockfd);
 	exit(0);
 }
@@ -50,36 +47,35 @@ void str_ser(int sockfd)
 	end = 0;
 	int c = 0;
 	printf("receiving data!\n");
-	srand ( time(NULL) );
 	
 	while(!end)
 	{
 		printf("c = %d\n",c);
-		if ((n= recvfrom(sockfd, &recvs, DATALEN, 0, (struct sockaddr *)&client_addr, &addrlen))==-1)		//receive the packet
+		c++;
+		n= recvfrom(sockfd, &recvs, DATALEN, 0, (struct sockaddr *)&client_addr, &addrlen);
+		if (n == -1)		//receive the packet
 		{
-			printf("error when receiving\n");
+			printf("Error when receiving.\n");
 			exit(1);
 		}
 		
-		if (recvs[n-1] == '\0')			//if it is the end of the file
+		else if (n == 0)			// if received a bad frame
 		{
-			end = 1;
-			n --;
+			ack.num = NACK_CODE;		
+			printf("Received a bad frame\n");
 		}
-		c++;	
-		memcpy((buf+lseek), recvs, n);
-		lseek += n;
 		
-		double prob = (double)rand()/RAND_MAX;
-		prob = floor(prob * 10.0) / 10.0;
-		printf("prob = %f, ",prob);
-		
-		if ( prob <= ERROR_PROBABILITY )
-			ack.num = NACK_CODE;
-		else
+		else						// if received a good frame
+		{
+			if (recvs[n-1] == '\0')			//if it is the end of the file
+			{
+				end = 1;
+				n --;
+			}
+			memcpy((buf+lseek), recvs, n);
+			lseek += n;
 			ack.num = ACK_CODE;
-			
-		printf("ack.num = %d\n",ack.num);
+		}
 		
 		ack.len = 0;
 	
