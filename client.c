@@ -1,7 +1,6 @@
 /***********************************
 client.c: the source file of the client in UDP transmission
 ***********************************/
-
 #include "headsock.h"
 
 // Packet transmission function
