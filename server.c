@@ -1,4 +1,4 @@
-/**********************************
+﻿/**********************************
 server.c: the source file of the server in UDP transmission 
 ***********************************/
 #include "headsock.h"
