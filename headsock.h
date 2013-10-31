@@ -15,7 +15,7 @@
 #define NEWFILE (O_WRONLY|O_CREAT|O_TRUNC)
 #define MYTCP_PORT 4950
 #define MYUDP_PORT 5350
-#define DATALEN 500
+#define DATALEN 1000
 #define BUFSIZE 60000
 #define ACK_CODE 1
 #define NACK_CODE 0

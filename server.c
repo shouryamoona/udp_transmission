@@ -44,17 +44,13 @@ void receive_data(int sockfd)
 	FILE *file_pointer;
 	struct ack_so ack;
 	struct sockaddr_in client_addr;
-	int addrlen, n, end_of_transmission = 0;
+	int addrlen, n, data_count = 0, end_of_transmission = 0;
 	long lseek = 0;
-	
 	addrlen = sizeof (struct sockaddr_in);
-	int c = 0;
 	
 	while (!end_of_transmission)
-	{
-		printf("c = %d\n",c);
-		c++;
-		
+	{	
+		data_count++;
 		// Receive the packet from client
 		n = recvfrom(sockfd, &received_data, DATALEN, 0, (struct sockaddr *)&client_addr, &addrlen);
 		if (n == -1)		
@@ -66,7 +62,7 @@ void receive_data(int sockfd)
 		// If received a packet with error
 		else if (n == 0)			
 		{
-			printf("Received a packet with error.\n");
+			printf("Received data packet %d with error. Sending NACK.\n", data_count);
 			ack.num = NACK_CODE;		
 		}
 		
@@ -74,13 +70,14 @@ void receive_data(int sockfd)
 		else						
 		{
 			// If it is the end of the file
-			if (received_data[n-1] == '\0')			
+			if (received_data[n - 1] == '\0')			
 			{
 				end_of_transmission = 1;
 				n --;
 			}
 			memcpy((buffer+lseek), received_data, n);
 			lseek += n;
+			printf("Received data packet %d successfully. Sending ACK. \n", data_count);
 			ack.num = ACK_CODE;
 		}
 		ack.len = 0;

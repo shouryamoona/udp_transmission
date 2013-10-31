@@ -89,7 +89,7 @@ float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, l
 	char *buffer, send_data[DATALEN];
 	long file_size,total_bytes_sent;
 	struct ack_so ack;
-	int n, packet_length, addrlen;
+	int n, packet_length, addrlen, data_count = 0;
 	float time_elapsed = 0.0;
 	double random_probability = 0.0;
 	struct timeval send_time, receive_time;
@@ -117,13 +117,11 @@ float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, l
 	buffer[file_size] ='\0';		
 	
 	gettimeofday(&send_time,NULL);			
-	int c = 0;
 	srand(time(NULL));
 	
 	while (total_bytes_sent <= file_size)
 	{
-		printf("c = %d\n",c);
-		c++;
+		data_count++;
 		if ((file_size + 1 - total_bytes_sent) <= DATALEN)
 			packet_length = file_size + 1 - total_bytes_sent;
 		else 
@@ -164,9 +162,10 @@ float transmit_data(FILE *file_pointer, int sockfd, struct sockaddr *ser_addr, l
 		// If received NACK, continue and retransmit last packet.
 		if ((ack.num == NACK_CODE) || (ack.len != 0))         		
 		{
-			printf("Error in transmission. Retransmitting packet.\n");
+			printf("Received NACK. Retransmitting data packet %d.\n", data_count);
 			continue;
 		}	
+		printf("Received ACK. Sending data packet %d.\n", data_count);
 		total_bytes_sent += packet_length;
 	}
 		
